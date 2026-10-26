@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "note": "CONTRACT 1. The fixed skill list. Job research, the self-rating form, every question and every score must use these ids exactly. Change only through a pull request that all three approve.",
+  "levels_self_rating": ["beginner", "intermediate", "advanced"],
+  "levels_importance": ["high", "medium", "low"],
+  "skills": [
+    {"id": "python", "name": "Python", "covers": "syntax, data structures, functions, OOP basics, common libraries"},
+    {"id": "sql", "name": "SQL", "covers": "joins, aggregation, subqueries, window functions"},
+    {"id": "statistics", "name": "Statistics", "covers": "distributions, hypothesis tests, p-values, probability basics"},
+    {"id": "data_analysis", "name": "Data Analysis", "covers": "pandas, data cleaning, exploratory analysis, feature handling"},
+    {"id": "data_visualization", "name": "Data Visualization", "covers": "charts, dashboards, Tableau or Power BI, storytelling with data"},
+    {"id": "machine_learning", "name": "Machine Learning", "covers": "algorithms, evaluation metrics, overfitting, feature engineering"},
+    {"id": "deep_learning", "name": "Deep Learning", "covers": "neural networks, CNN, RNN, transformers, training"},
+    {"id": "nlp", "name": "NLP", "covers": "text processing, embeddings, text classification, transformer models"},
+    {"id": "llm_genai", "name": "LLM and GenAI", "covers": "prompting, RAG, agents, fine-tuning basics, evaluation"},
+    {"id": "mlops", "name": "MLOps and Deployment", "covers": "APIs, Docker, CI/CD, monitoring, cloud basics"},
+    {"id": "data_engineering", "name": "Data Engineering", "covers": "pipelines, ETL, warehouses, Spark basics"},
+    {"id": "communication", "name": "Communication", "covers": "explaining results, behavioural questions, talking to stakeholders"}
+  ]
+}

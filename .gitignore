@@ -1,0 +1,12 @@
+
+# --- AI Interview Coach additions ---
+.env
+chroma_db/
+*.sqlite3
+*.db
+node_modules/
+frontend/dist/
+.DS_Store
+
+.venv/
+__pycache__/

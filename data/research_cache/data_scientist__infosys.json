@@ -1,0 +1,110 @@
+{
+  "role": "data_scientist",
+  "role_name": "Data Scientist",
+  "company": "Infosys",
+  "skills": [
+    {
+      "skill": "communication",
+      "importance": "high",
+      "sources": [
+        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_analysis",
+      "importance": "high",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "machine_learning",
+      "importance": "high",
+      "sources": [
+        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "python",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "statistics",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "data_engineering",
+      "importance": "medium",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_visualization",
+      "importance": "medium",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "sql",
+      "importance": "medium",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "deep_learning",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "llm_genai",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "mlops",
+      "importance": "low",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "nlp",
+      "importance": "low",
+      "sources": [
+        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
+      ],
+      "basis": "web"
+    }
+  ],
+  "pages_read": [
+    {
+      "url": "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227",
+      "read": true
+    },
+    {
+      "url": "https://www.gravityer.com/jobs/data-scientist-infosys",
+      "read": true
+    }
+  ],
+  "cached": false,
+  "warnings": [],
+  "dropped_unverified": [
+    "data_visualization",
+    "statistics"
+  ],
+  "seconds": 236
+}

@@ -1,0 +1,20 @@
+# AI Interview Coach - Python packages. Use Python 3.12.
+# Install inside your own virtual environment:  pip install -r requirements.txt
+# Once everything works on all laptops we will pin exact versions here.
+
+# language model client (the Ollama app must also be installed)
+ollama
+
+# research agent tools
+ddgs
+trafilatura
+
+# question search (RAG)
+chromadb
+sentence-transformers
+
+# backend
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv

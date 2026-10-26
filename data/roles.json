@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "status": "DRAFT. Written from general knowledge. The team must review each role against real job posts before relying on it.",
+  "note": "The reliable base layer. Each role lists skill ids from skills.json with an importance level. Skills not listed are not needed for that role. Live research from the agent adjusts these for a specific company.",
+  "roles": {
+    "data_analyst": {
+      "name": "Data Analyst",
+      "skills": {"sql": "high", "data_analysis": "high", "data_visualization": "high", "communication": "high", "python": "medium", "statistics": "medium", "machine_learning": "low"}
+    },
+    "data_scientist": {
+      "name": "Data Scientist",
+      "skills": {"python": "high", "sql": "high", "statistics": "high", "data_analysis": "high", "machine_learning": "high", "data_visualization": "medium", "communication": "medium", "deep_learning": "low", "nlp": "low", "llm_genai": "low", "mlops": "low"}
+    },
+    "ml_engineer": {
+      "name": "ML Engineer",
+      "skills": {"python": "high", "machine_learning": "high", "mlops": "high", "sql": "medium", "deep_learning": "medium", "statistics": "medium", "data_engineering": "low", "communication": "low"}
+    },
+    "genai_engineer": {
+      "name": "AI / GenAI Engineer",
+      "skills": {"python": "high", "llm_genai": "high", "mlops": "medium", "deep_learning": "medium", "nlp": "medium", "machine_learning": "medium", "communication": "medium", "sql": "low"}
+    },
+    "llm_engineer": {
+      "name": "LLM Engineer",
+      "skills": {"python": "high", "llm_genai": "high", "nlp": "high", "deep_learning": "high", "mlops": "medium", "machine_learning": "medium", "statistics": "low"}
+    },
+    "nlp_engineer": {
+      "name": "NLP Engineer",
+      "skills": {"python": "high", "nlp": "high", "deep_learning": "high", "machine_learning": "high", "statistics": "medium", "llm_genai": "medium", "mlops": "low"}
+    },
+    "mlops_engineer": {
+      "name": "MLOps Engineer",
+      "skills": {"mlops": "high", "python": "high", "data_engineering": "medium", "machine_learning": "medium", "sql": "low", "communication": "low"}
+    },
+    "data_engineer": {
+      "name": "Data Engineer",
+      "skills": {"sql": "high", "python": "high", "data_engineering": "high", "mlops": "medium", "data_analysis": "low", "communication": "low"}
+    }
+  }
+}
