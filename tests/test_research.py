@@ -35,8 +35,11 @@ class FakeWorld:
 
     def chat(self, **kwargs):
         self.calls += 1
-        if kwargs.get("format"):  # the extraction call asks for JSON
-            return NS(message=NS(content=json.dumps({"skills": self.extraction}), tool_calls=None))
+        if kwargs.get("format"):  # the extraction call asks for the form
+            form = {sid: {"importance": "not_mentioned", "quote": ""} for sid in kwargs["format"]["required"]}
+            for item in self.extraction:
+                form[item["skill"]] = {"importance": item["importance"], "quote": item["quote"]}
+            return NS(message=NS(content=json.dumps(form), tool_calls=None))
         return self.replies.pop(0)
 
     def search(self, query):
@@ -92,6 +95,21 @@ class ResearchTests(unittest.TestCase):
         skills, _ = research.verify_and_merge(raw, {"u1": PAGE_A}, {}, ["sql"])
         self.assertEqual(skills, [])
 
+    def test_quote_must_mention_its_own_skill(self):
+        # the quote IS on the page, but it says nothing about machine learning
+        raw = [{"skill": "sql", "importance": "high", "quote": "strong SQL and Python"},
+               {"skill": "machine_learning", "importance": "high", "quote": "strong SQL and Python"}]
+        skills, dropped = research.verify_and_merge(raw, {"u1": PAGE_A}, {}, ["sql", "machine_learning"])
+        self.assertEqual([s["skill"] for s in skills], ["sql"])
+        self.assertEqual(dropped, ["machine_learning"])
+
+    def test_a_quote_with_one_extra_word_counts_but_an_invented_one_does_not(self):
+        raw = [{"skill": "sql", "importance": "high", "quote": "We need a data scientist with strong SQL skills and Python"},
+               {"skill": "python", "importance": "high", "quote": "We need a pastry chef with strong SQL and Python skills"}]
+        skills, dropped = research.verify_and_merge(raw, {"u1": PAGE_A}, {}, ["sql", "python"])
+        self.assertEqual([s["skill"] for s in skills], ["sql"])
+        self.assertEqual(dropped, ["python"])
+    
     def test_blocked_domain_detection(self):
         self.assertTrue(research.is_blocked("https://www.interviewquery.com/guides/x"))
         self.assertFalse(research.is_blocked("https://example.com/interviewquery.com"))
