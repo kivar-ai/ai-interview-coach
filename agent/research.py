@@ -42,12 +42,29 @@ PREVIEW_CHARS = 400       # the model only sees a short preview while choosing p
 STORE_CHARS = 8000        # how much of each page we keep for the extraction step
 EXTRACT_CHARS = 4500      # how much of each page the extraction step reads
 NUM_CTX = 8192            # model working memory in tokens
+EXTRACT_MAX_TOKENS = 900  # safety limit: the form answer can never run on forever
 
 # Sites that blocked automated reading in our tests. We hide them from the search results,
 # so the model never wastes a slow step on them. Add more as we find them.
 BLOCKED_DOMAINS = ("interviewquery.com", "dataford.io", "foundit.in", "ziprecruiter.com")
 
 RANK = {"high": 0, "medium": 1, "low": 2}
+
+# A quote only counts for a skill if it contains one of these words (lowercase, no punctuation).
+KEYWORDS = {
+    "python": ["python"],
+    "sql": ["sql", "database"],
+    "statistics": ["statistic"],
+    "data_analysis": ["data analysis", "analytics", "analyz", "analys"],
+    "data_visualization": ["visuali", "dashboard", "tableau", "power bi"],
+    "machine_learning": ["machine learning"],
+    "deep_learning": ["deep learning", "neural"],
+    "nlp": ["nlp", "natural language"],
+    "llm_genai": ["generative", "llm", "large language"],
+    "mlops": ["mlops", "deploy"],
+    "data_engineering": ["data engineering", "etl", "data pipeline"],
+    "communication": ["communicat"],
+}
 
 GATHER_SYSTEM_PROMPT = """You are a research assistant collecting evidence about the skills a job requires.
 Rules:
@@ -68,10 +85,25 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", (text or "general").lower()).strip("-")
 
 
-def normalize(text):
+def normalize(text):    
     """Lowercase, remove punctuation and extra spaces, so a quote can be compared with a page."""
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", text.lower())).strip()
 
+def quote_on_page(quote, page, min_share=0.7, min_words=4):
+    """True if the quote is on the page, even if the model changed a word or two.
+    Both texts are already normalized. We find the longest run of the quote's words that
+    appears unchanged on the page, and it must cover most of the quote."""
+    words = quote.split()
+    if not words:
+        return False
+    padded = f" {page} "
+    best = 0
+    for start in range(len(words)):
+        length = best + 1                       # only look for a run longer than the best so far
+        while start + length <= len(words) and f" {' '.join(words[start:start + length])} " in padded:
+            best = length
+            length += 1
+    return best == len(words) or (best >= min_words and best >= min_share * len(words))
 
 def is_blocked(url):
     host = urlparse(url).netloc.lower()
@@ -199,42 +231,46 @@ def gather_evidence(role_name, company, evidence):
 # ---------------------------------------------------------------- stage 2: EXTRACT (one LLM call)
 
 def extraction_schema(skill_ids):
-    return {
+    """A form with one box per skill. Each box holds an importance and a quote."""
+    box = {
         "type": "object",
-        "properties": {"skills": {"type": "array", "items": {
-            "type": "object",
-            "properties": {
-                "skill": {"type": "string", "enum": skill_ids},
-                "importance": {"type": "string", "enum": ["high", "medium", "low"]},
-                "quote": {"type": "string"},
-            },
-            "required": ["skill", "importance", "quote"],
-        }}},
-        "required": ["skills"],
+        "properties": {
+            "importance": {"type": "string", "enum": ["high", "medium", "low", "not_mentioned"]},
+            "quote": {"type": "string"},
+        },
+        "required": ["importance", "quote"],
     }
+    return {"type": "object", "properties": {sid: box for sid in skill_ids}, "required": skill_ids}
 
 
 def extract_skills(pages, skills_def):
     skill_ids = [s["id"] for s in skills_def]
     allowed = "\n".join(f"- {s['id']}: {s['name']} ({s['covers']})" for s in skills_def)
     system = (
-        "You extract the skills a job requires from web pages.\n"
-        "Use ONLY the pages given. Allowed skills (use the id exactly):\n" + allowed + "\n"
-        "For every allowed skill that the pages ask for, give:\n"
-        "- importance: high = required or central or repeated, medium = preferred or useful, low = mentioned briefly\n"
-        "- quote: a short passage (at most 20 words) copied WORD FOR WORD from the pages that supports the skill\n"
-        "Skip any skill the pages do not support. Never invent a quote."
+        "You fill in a form about the skills a job requires, using ONLY the pages given.\n"
+        "The form has one box for each of these skills (ids exactly as written):\n" + allowed + "\n"
+        "For every skill give:\n"
+        "- importance: high = required or central or repeated, medium = preferred or useful, "
+        "low = mentioned briefly, not_mentioned = the pages do not talk about this skill. "
+        "Use not_mentioned whenever you are unsure.\n"
+        "- quote: the exact words from the pages that prove the skill, at most 8 words. Do not change, add or remove any word. "
+        "Leave the quote empty when the skill is not_mentioned. Never invent a quote."
     )
     body = "\n\n".join(f"[PAGE {i}] {url}\n{text[:EXTRACT_CHARS]}" for i, (url, text) in enumerate(pages.items(), start=1))
     reply = ollama.chat(
         model=MODEL, think=False, format=extraction_schema(skill_ids),
         messages=[{"role": "system", "content": system}, {"role": "user", "content": body}],
-        options={"num_ctx": NUM_CTX, "temperature": 0},
+        options={"num_ctx": NUM_CTX, "temperature": 0.2, "num_predict": EXTRACT_MAX_TOKENS},
     ).message
     try:
-        return json.loads(reply.content).get("skills", [])
+        form = json.loads(reply.content)
     except (json.JSONDecodeError, AttributeError, TypeError):
         return []
+    items = []
+    for skill, box in form.items():       # turn the form back into a list for the verify step
+        if isinstance(box, dict) and box.get("importance") in RANK:   # skips not_mentioned
+            items.append({"skill": skill, "importance": box["importance"], "quote": box.get("quote", "")})
+    return items
 
 
 # ---------------------------------------------------------------- stages 3 and 4: VERIFY and MERGE (plain code)
@@ -251,8 +287,14 @@ def verify_and_merge(raw_items, pages, base_skills, skill_ids):
         quote = normalize(item.get("quote", ""))
         if skill not in skill_ids or importance not in RANK:
             continue
-        sources = [url for url, text in page_norm.items() if len(quote) >= 8 and quote in text]
+        words = KEYWORDS.get(skill, [])
+        if words and not any(word in quote for word in words):   # the quote is not about this skill
+            print(f"   DROPPED {skill}: the quote does not mention it: {item.get('quote')!r}")
+            dropped.append(skill)
+            continue
+        sources = [url for url, text in page_norm.items() if len(quote) >= 8 and quote_on_page(quote, text)]
         if not sources:
+            print(f"   DROPPED {skill}: the quote was {item.get('quote')!r}")
             dropped.append(skill)
             continue
         entry = found.setdefault(skill, {"importance": importance, "sources": []})

@@ -12,23 +12,7 @@
       "basis": "web"
     },
     {
-      "skill": "data_analysis",
-      "importance": "high",
-      "sources": [
-        "https://www.gravityer.com/jobs/data-scientist-infosys"
-      ],
-      "basis": "web"
-    },
-    {
       "skill": "machine_learning",
-      "importance": "high",
-      "sources": [
-        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
-      ],
-      "basis": "web"
-    },
-    {
-      "skill": "python",
       "importance": "high",
       "sources": [],
       "basis": "base_profile"
@@ -36,11 +20,13 @@
     {
       "skill": "statistics",
       "importance": "high",
-      "sources": [],
-      "basis": "base_profile"
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
     },
     {
-      "skill": "data_engineering",
+      "skill": "data_analysis",
       "importance": "medium",
       "sources": [
         "https://www.gravityer.com/jobs/data-scientist-infosys"
@@ -54,6 +40,30 @@
       "basis": "base_profile"
     },
     {
+      "skill": "deep_learning",
+      "importance": "medium",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "llm_genai",
+      "importance": "medium",
+      "sources": [
+        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "python",
+      "importance": "medium",
+      "sources": [
+        "https://www.gravityer.com/jobs/data-scientist-infosys"
+      ],
+      "basis": "web"
+    },
+    {
       "skill": "sql",
       "importance": "medium",
       "sources": [
@@ -62,32 +72,16 @@
       "basis": "web"
     },
     {
-      "skill": "deep_learning",
-      "importance": "low",
-      "sources": [],
-      "basis": "base_profile"
-    },
-    {
-      "skill": "llm_genai",
-      "importance": "low",
-      "sources": [],
-      "basis": "base_profile"
-    },
-    {
       "skill": "mlops",
       "importance": "low",
-      "sources": [
-        "https://www.gravityer.com/jobs/data-scientist-infosys"
-      ],
-      "basis": "web"
+      "sources": [],
+      "basis": "base_profile"
     },
     {
       "skill": "nlp",
       "importance": "low",
-      "sources": [
-        "https://in.linkedin.com/jobs/view/data-scientist-at-infosys-4407343227"
-      ],
-      "basis": "web"
+      "sources": [],
+      "basis": "base_profile"
     }
   ],
   "pages_read": [
@@ -103,8 +97,7 @@
   "cached": false,
   "warnings": [],
   "dropped_unverified": [
-    "data_visualization",
-    "statistics"
+    "machine_learning"
   ],
   "seconds": 236
 }
