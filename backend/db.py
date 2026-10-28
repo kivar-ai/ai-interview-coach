@@ -126,3 +126,16 @@ def save_answer(test_id, question_id, answer, result):
             (_number(test_id, "t_"), question_id, answer, result["score"], result["max_score"],
              result["feedback"], json.dumps(result["missed_points"])),
         )
+
+def get_answer_rows(student_id):
+    """Every answer of this student, with the skill of its question."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT q.skill AS skill, a.score AS score, a.max_score AS max_score "
+            "FROM answers a "
+            "JOIN test_questions q ON q.test_id = a.test_id AND q.question_id = a.question_id "
+            "JOIN tests t ON t.id = a.test_id "
+            "WHERE t.student_id = ?",
+            (_number(student_id, "s_"),),
+        ).fetchall()
+    return [dict(row) for row in rows]

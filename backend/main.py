@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend import db
-from agent import grader, question_bank, research
+from agent import gap, grader, question_bank, research
 
 import threading
 
@@ -139,3 +139,14 @@ def start_research(body: ResearchIn, background: BackgroundTasks):
             RESEARCH_RUNNING.add(key)
             background.add_task(run_research, key, student["target_role"], student["company"])
     return JSONResponse(status_code=202, content={"status": "working"})
+
+@app.get("/report")
+def get_report(student_id: str):
+    student = db.get_student(student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Unknown student")
+    cache_file = cache_file_of(student)
+    if not cache_file.exists():
+        raise HTTPException(status_code=409, detail="The job has not been researched yet.")
+    research_result = json.loads(cache_file.read_text(encoding="utf-8"))
+    return gap.build_report(research_result["skills"], student["self_rating"], db.get_answer_rows(student_id))
