@@ -11,6 +11,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend import db
 from agent import grader, question_bank, research
 
+import threading
+
+from fastapi import BackgroundTasks
+
 DATA = Path(__file__).resolve().parent.parent / "data"
 ROLES = json.loads((DATA / "roles.json").read_text(encoding="utf-8"))["roles"]
 SKILLS = {s["id"] for s in json.loads((DATA / "skills.json").read_text(encoding="utf-8"))["skills"]}
@@ -18,6 +22,27 @@ SKILLS = {s["id"] for s in json.loads((DATA / "skills.json").read_text(encoding=
 app = FastAPI(title="AI Interview Coach")
 db.init_db()
 
+RESEARCH_RUNNING = set()        # jobs running right now, like "data_scientist__wipro"
+RESEARCH_FAILED = {}            # job key -> error message, shown once
+RESEARCH_LOCK = threading.Lock()
+
+
+def cache_key(student):
+    return f"{student['target_role']}__{research.slug(student['company'])}"
+
+
+def cache_file_of(student):
+    return research.CACHE_DIR / f"{cache_key(student)}.json"
+
+
+def run_research(key, role, company):
+    """Runs in the background. research() saves its result in the cache file when it finishes."""
+    try:
+        research.research(role, company)
+    except Exception as error:
+        RESEARCH_FAILED[key] = str(error)
+    finally:
+        RESEARCH_RUNNING.discard(key)
 
 # The contract says every error looks like {"error": "short message"}
 @app.exception_handler(StarletteHTTPException)
@@ -59,8 +84,8 @@ def get_test(student_id: str):
     student = db.get_student(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Unknown student")
-
-    cache_file = research.CACHE_DIR / f"{student['target_role']}__{research.slug(student['company'])}.json"
+    cache_file = cache_file_of(student)
+    #cache_file = research.CACHE_DIR / f"{student['target_role']}__{research.slug(student['company'])}.json"
     if not cache_file.exists():
         raise HTTPException(status_code=409, detail="The job has not been researched yet.")
     research_result = json.loads(cache_file.read_text(encoding="utf-8"))
@@ -92,3 +117,25 @@ def submit_answer(body: AnswerIn):
         raise HTTPException(status_code=502, detail=str(error))
     db.save_answer(body.test_id, body.question_id, body.answer, result)
     return result
+
+class ResearchIn(BaseModel):
+    student_id: str
+
+
+@app.post("/research")
+def start_research(body: ResearchIn, background: BackgroundTasks):
+    student = db.get_student(body.student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Unknown student")
+
+    key, cache_file = cache_key(student), cache_file_of(student)
+    if cache_file.exists():
+        return json.loads(cache_file.read_text(encoding="utf-8"))
+
+    with RESEARCH_LOCK:                          # two requests at the same time must not start two jobs
+        if key in RESEARCH_FAILED:
+            raise HTTPException(status_code=500, detail="Research failed: " + RESEARCH_FAILED.pop(key))
+        if key not in RESEARCH_RUNNING:
+            RESEARCH_RUNNING.add(key)
+            background.add_task(run_research, key, student["target_role"], student["company"])
+    return JSONResponse(status_code=202, content={"status": "working"})
