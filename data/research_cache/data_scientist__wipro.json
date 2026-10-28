@@ -1,0 +1,108 @@
+{
+  "role": "data_scientist",
+  "role_name": "Data Scientist",
+  "company": "Wipro",
+  "skills": [
+    {
+      "skill": "communication",
+      "importance": "high",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_analysis",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "machine_learning",
+      "importance": "high",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "sql",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "data_visualization",
+      "importance": "medium",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "mlops",
+      "importance": "medium",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "python",
+      "importance": "medium",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "statistics",
+      "importance": "medium",
+      "sources": [
+        "https://careers.wipro.com/job/Data-Scientist/212888-en_US/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "deep_learning",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "llm_genai",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "nlp",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    }
+  ],
+  "pages_read": [
+    {
+      "url": "https://www.naukri.com/code360/library/data-scientist-at-wipro",
+      "read": false
+    },
+    {
+      "url": "https://careers.wipro.com/job/Data-Scientist/212888-en_US/",
+      "read": true
+    },
+    {
+      "url": "https://careers.wipro.com/job/Data-Scientist/207264-en_US/",
+      "read": true
+    }
+  ],
+  "cached": false,
+  "warnings": [],
+  "dropped_unverified": [
+    "data_analysis",
+    "data_engineering",
+    "nlp",
+    "sql"
+  ],
+  "seconds": 527
+}

@@ -60,6 +60,7 @@ Response
 `base_profile` = taken from our own role profile because the pages did not mention it (`sources` is empty).
 The screen can show the two differently, for example a small "from web" label. `warnings` holds messages to show
 the student (for example "Only 1 page could be read"). `dropped_unverified` and `seconds` are for us, not for students.
+“If the job has not been researched before, this call answers 202 with {"status": "working"} and the research runs in the background (it can take a few minutes). Call it again every 5 seconds until it answers 200 with the result.”
 
 ## 3. Get the test questions
 `GET /test?student_id=s_001`
