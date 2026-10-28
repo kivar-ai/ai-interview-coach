@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend import db
-from agent import gap, grader, question_bank, research
+from agent import gap, grader, planner, question_bank, research
 
 import threading
 
@@ -17,8 +17,10 @@ from fastapi import BackgroundTasks
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 ROLES = json.loads((DATA / "roles.json").read_text(encoding="utf-8"))["roles"]
-SKILLS = {s["id"] for s in json.loads((DATA / "skills.json").read_text(encoding="utf-8"))["skills"]}
-
+_skills_def = json.loads((DATA / "skills.json").read_text(encoding="utf-8"))["skills"]
+SKILLS = {s["id"] for s in _skills_def}
+SKILL_NAMES = {s["id"]: s["name"] for s in _skills_def}
+RESOURCES = json.loads((DATA / "resources.json").read_text(encoding="utf-8"))["resources"]
 app = FastAPI(title="AI Interview Coach")
 db.init_db()
 
@@ -140,8 +142,8 @@ def start_research(body: ResearchIn, background: BackgroundTasks):
             background.add_task(run_research, key, student["target_role"], student["company"])
     return JSONResponse(status_code=202, content={"status": "working"})
 
-@app.get("/report")
-def get_report(student_id: str):
+def report_for(student_id):
+    """The gap report of a student. Shared by /report and /plan."""
     student = db.get_student(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Unknown student")
@@ -150,3 +152,13 @@ def get_report(student_id: str):
         raise HTTPException(status_code=409, detail="The job has not been researched yet.")
     research_result = json.loads(cache_file.read_text(encoding="utf-8"))
     return gap.build_report(research_result["skills"], student["self_rating"], db.get_answer_rows(student_id))
+
+
+@app.get("/report")
+def get_report(student_id: str):
+    return report_for(student_id)
+
+@app.get("/plan")
+def get_plan(student_id: str):
+    report = report_for(student_id)
+    return planner.build_plan(report, db.get_missed_points(student_id), RESOURCES, SKILL_NAMES)

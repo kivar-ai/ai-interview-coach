@@ -1,0 +1,15 @@
+{
+  "resources": {
+    "python": [{"title": "The Python Tutorial (official docs)", "url": "https://docs.python.org/3/tutorial/"}],
+    "sql": [{"title": "SQL Tutorial (W3Schools)", "url": "https://www.w3schools.com/sql/"}],
+    "statistics": [{"title": "Statistics and Probability (Khan Academy)", "url": "https://www.khanacademy.org/math/statistics-probability"}],
+    "data_analysis": [{"title": "pandas getting started tutorials", "url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/"}],
+    "data_visualization": [{"title": "Matplotlib tutorials", "url": "https://matplotlib.org/stable/tutorials/index.html"}],
+    "machine_learning": [{"title": "scikit-learn user guide", "url": "https://scikit-learn.org/stable/user_guide.html"}],
+    "deep_learning": [{"title": "Dive into Deep Learning (free book)", "url": "https://d2l.ai/"}],
+    "nlp": [{"title": "Hugging Face NLP course", "url": "https://huggingface.co/learn/nlp-course"}],
+    "llm_genai": [{"title": "Hugging Face learning hub", "url": "https://huggingface.co/learn"}],
+    "mlops": [{"title": "MLOps principles", "url": "https://ml-ops.org/"}],
+    "data_engineering": [{"title": "Apache Airflow documentation", "url": "https://airflow.apache.org/docs/"}]
+  }
+}

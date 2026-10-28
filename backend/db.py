@@ -139,3 +139,22 @@ def get_answer_rows(student_id):
             (_number(student_id, "s_"),),
         ).fetchall()
     return [dict(row) for row in rows]
+
+def get_missed_points(student_id):
+    """Every rubric point the student missed, grouped by skill, without repeats: {"sql": ["...", ...]}."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT q.skill AS skill, a.missed_points AS missed_points "
+            "FROM answers a "
+            "JOIN test_questions q ON q.test_id = a.test_id AND q.question_id = a.question_id "
+            "JOIN tests t ON t.id = a.test_id "
+            "WHERE t.student_id = ? ORDER BY a.id",
+            (_number(student_id, "s_"),),
+        ).fetchall()
+    result = {}
+    for row in rows:
+        points = result.setdefault(row["skill"], [])
+        for point in json.loads(row["missed_points"] or "[]"):
+            if point not in points:
+                points.append(point)
+    return result
