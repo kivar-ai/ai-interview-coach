@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
 
-function TestScreen({ studentId, options }) {
+function TestScreen({ studentId, options, onDone }) {
   const [test, setTest] = useState(null);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -65,10 +65,11 @@ function TestScreen({ studentId, options }) {
   const skipped = test.skipped_skills || [];
 
   if (index >= test.questions.length) {
-    return (
+        return (
       <div>
         <h2>Test finished</h2>
-        <p>You answered {test.questions.length} questions. The gap report comes next.</p>
+        <p>You answered {test.questions.length} questions.</p>
+        <button onClick={onDone}>See my gap report</button>
       </div>
     );
   }
