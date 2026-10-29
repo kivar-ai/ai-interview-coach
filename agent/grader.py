@@ -29,6 +29,21 @@ def normalize(text):
     """Lowercase, remove punctuation and extra spaces, so two texts can be compared."""
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", text.lower())).strip()
 
+def quote_on_page(quote, page, min_share=0.7, min_words=4):
+    """True if the quote is in the text, even if the model changed a word or two.
+    Both texts are already normalized. We find the longest run of the quote's words that
+    appears unchanged and require it to cover most of the quote."""
+    words = quote.split()
+    if not words:
+        return False
+    padded = f" {page} "
+    best = 0
+    for start in range(len(words)):
+        length = best + 1
+        while start + length <= len(words) and f" {' '.join(words[start:start + length])} " in padded:
+            best = length
+            length += 1
+    return best == len(words) or (best >= min_words and best >= min_share * len(words))
 
 def score_from_marks(marks):
     """marks is a list like ["yes", "partly", "no"]. Returns a whole number from 0 to 10.
@@ -100,7 +115,8 @@ For each point below:
         if mark not in WEIGHTS:
             mark = "no"
         # CODE CHECK: a yes or partly needs words that really are in the student's answer
-        if mark != "no" and (not normalize(said) or normalize(said) not in normalize(student_answer)):
+        if mark != "no" and not quote_on_page(normalize(said), normalize(student_answer)):
+            print(f"   DEMOTED {key} ({mark} to no): the words the model copied were {said!r}")
             mark = "no"
         final.append(mark)
     return final

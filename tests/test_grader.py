@@ -61,6 +61,17 @@ class JudgeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             grader.judge_points("Q", POINTS, "some answer")
 
+    def test_a_quote_with_one_changed_word_still_counts(self):
+        reply = json.dumps({
+            "point_1": {"student_said": "compare training performance with validation performance", "mark": "yes"},
+            "point_2": {"student_said": "", "mark": "no"},
+            "point_3": {"student_said": "", "mark": "no"},
+            "point_4": {"student_said": "", "mark": "no"},
+        })
+        grader._client = FakeClient(reply)
+        answer = "You can spot it by comparing training performance with validation performance."
+        self.assertEqual(grader.judge_points("Q", POINTS, answer)[0], "yes")
+
 class GradeAnswerTests(unittest.TestCase):
     def test_result_has_exactly_the_contract_fields(self):
         question = {"id": "q_x", "text": "Q", "skill": "sql", "rubric": POINTS}

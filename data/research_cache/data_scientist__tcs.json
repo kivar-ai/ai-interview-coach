@@ -1,0 +1,117 @@
+{
+  "role": "data_scientist",
+  "role_name": "Data Scientist",
+  "company": "TCS",
+  "skills": [
+    {
+      "skill": "communication",
+      "importance": "high",
+      "sources": [
+        "https://www.coursera.org/articles/data-scientist-skills"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_analysis",
+      "importance": "high",
+      "sources": [
+        "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_engineering",
+      "importance": "high",
+      "sources": [
+        "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_visualization",
+      "importance": "high",
+      "sources": [
+        "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "machine_learning",
+      "importance": "high",
+      "sources": [
+        "https://www.coursera.org/articles/data-scientist-skills"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "python",
+      "importance": "high",
+      "sources": [
+        "https://www.coursera.org/articles/data-scientist-skills"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "sql",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "statistics",
+      "importance": "high",
+      "sources": [
+        "https://www.coursera.org/articles/data-scientist-skills"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "deep_learning",
+      "importance": "medium",
+      "sources": [
+        "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "nlp",
+      "importance": "medium",
+      "sources": [
+        "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "llm_genai",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "mlops",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    }
+  ],
+  "pages_read": [
+    {
+      "url": "https://www.tcs.com/careers/india/tcs-data-and-analytics-careers",
+      "read": false
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/blogs/top-7-skills-required-to-become-a-data-scientist/",
+      "read": true
+    },
+    {
+      "url": "https://www.coursera.org/articles/data-scientist-skills",
+      "read": true
+    }
+  ],
+  "cached": false,
+  "warnings": [],
+  "dropped_unverified": [
+    "sql"
+  ],
+  "seconds": 313
+}
