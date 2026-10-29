@@ -14,6 +14,7 @@ from agent import gap, grader, planner, question_bank, research
 import threading
 
 from fastapi import BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 ROLES = json.loads((DATA / "roles.json").read_text(encoding="utf-8"))["roles"]
@@ -22,6 +23,12 @@ SKILLS = {s["id"] for s in _skills_def}
 SKILL_NAMES = {s["id"]: s["name"] for s in _skills_def}
 RESOURCES = json.loads((DATA / "resources.json").read_text(encoding="utf-8"))["resources"]
 app = FastAPI(title="AI Interview Coach")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],      # only our own screen may call the backend
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 db.init_db()
 
 RESEARCH_RUNNING = set()        # jobs running right now, like "data_scientist__wipro"
@@ -162,3 +169,11 @@ def get_report(student_id: str):
 def get_plan(student_id: str):
     report = report_for(student_id)
     return planner.build_plan(report, db.get_missed_points(student_id), RESOURCES, SKILL_NAMES)
+
+@app.get("/options")
+def get_options():
+    """The roles and skills the screen can offer, straight from our data files."""
+    return {
+        "roles": [{"id": role_id, "name": role["name"]} for role_id, role in ROLES.items()],
+        "skills": [{"id": s["id"], "name": s["name"]} for s in _skills_def],
+    }
