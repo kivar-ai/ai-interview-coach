@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+import random
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agent"))
 import question_bank  # noqa: E402
@@ -26,7 +27,7 @@ class PickTests(unittest.TestCase):
         self.assertEqual(len(pick([{"skill": "sql", "importance": "high"}])), 3)
         self.assertEqual(len(pick([{"skill": "sql", "importance": "low"}])), 1)
 
-    def test_easiest_questions_come_first(self):
+    def test_medium_skill_gets_an_easy_then_a_medium_question(self):
         picked = pick([{"skill": "sql", "importance": "medium"}])
         self.assertEqual([q["question_id"] for q in picked], ["q_sql_001", "q_sql_002"])
 
@@ -38,6 +39,26 @@ class PickTests(unittest.TestCase):
         picked = pick([{"skill": "sql", "importance": "low"}])
         self.assertEqual(sorted(picked[0]), ["number", "question_id", "skill", "text"])
 
+class SpreadTests(unittest.TestCase):
+    QUESTIONS = [("e1", "t", "easy"), ("e2", "t", "easy"), ("m1", "t", "medium"), ("h1", "t", "hard")]
+
+    def test_three_questions_get_one_of_each_level(self):
+        chosen = question_bank.spread_pick(self.QUESTIONS, 3, random.Random(1))
+        self.assertEqual([q[2] for q in chosen], ["easy", "medium", "hard"])
+
+    def test_a_missing_level_uses_the_nearest_one(self):
+        questions = [("e1", "t", "easy"), ("h1", "t", "hard"), ("h2", "t", "hard")]
+        chosen = question_bank.spread_pick(questions, 2, random.Random(1))
+        self.assertEqual([q[2] for q in chosen], ["easy", "hard"])
+
+    def test_never_more_than_the_bank_has(self):
+        chosen = question_bank.spread_pick([("e1", "t", "easy")], 3, random.Random(1))
+        self.assertEqual(len(chosen), 1)
+
+    def test_same_seed_gives_the_same_choice(self):
+        a = question_bank.spread_pick(self.QUESTIONS, 3, random.Random(5))
+        b = question_bank.spread_pick(self.QUESTIONS, 3, random.Random(5))
+        self.assertEqual(a, b)
 
 if __name__ == "__main__":
     unittest.main()
