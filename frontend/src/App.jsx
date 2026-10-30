@@ -4,6 +4,7 @@ import ProfileScreen from "./ProfileScreen";
 import ResearchScreen from "./ResearchScreen";
 import TestScreen from "./TestScreen";
 import ReportScreen from "./ReportScreen";
+import PlanScreen from "./PlanScreen";
 
 function App() {
   const [options, setOptions] = useState(null);
@@ -38,7 +39,10 @@ function App() {
       {screen === "test" && (
         <TestScreen studentId={profile.studentId} options={options} onDone={() => setScreen("report")} />
       )}
-      {screen === "report" && <ReportScreen studentId={profile.studentId} options={options} />}
+      {screen === "report" && (
+        <ReportScreen studentId={profile.studentId} options={options} onNext={() => setScreen("plan")} />
+      )}
+      {screen === "plan" && <PlanScreen studentId={profile.studentId} options={options} />}
     </div>
   );
 }

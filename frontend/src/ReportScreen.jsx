@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
 
-function ReportScreen({ studentId, options }) {
+function ReportScreen({ studentId, options, onNext }) {
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
 
@@ -67,6 +67,9 @@ function ReportScreen({ studentId, options }) {
           ))}
         </tbody>
       </table>
+            <p>
+        <button onClick={onNext}>See my study plan</button>
+      </p>
     </div>
   );
 }
