@@ -5,6 +5,7 @@ The CSV files are the truth. Chroma is rebuilt from them, so running this again 
 
 import argparse
 import csv
+import random
 import json
 from pathlib import Path
 
@@ -64,19 +65,43 @@ def index_questions(rows=None):
         )
     return collection
 
-def pick_questions(research_skills, collection=None):
+RANK = {"easy": 0, "medium": 1, "hard": 2}
+# which difficulty each pick should aim for, by how many questions the skill gets
+SPREAD = {1: ["easy"], 2: ["easy", "medium"], 3: ["easy", "medium", "hard"]}
+
+
+def spread_pick(questions, wanted, rng):
+    """questions: list of (id, text, difficulty). Returns up to `wanted` of them,
+    one per difficulty in SPREAD. If a level has no question, the nearest level is used.
+    Inside a level the choice is random."""
+    remaining = sorted(questions, key=lambda q: q[0])
+    chosen = []
+    for target in SPREAD.get(wanted, ["easy"])[:wanted]:
+        if not remaining:
+            break
+        nearest = min(abs(RANK[q[2]] - RANK[target]) for q in remaining)
+        candidates = [q for q in remaining if abs(RANK[q[2]] - RANK[target]) == nearest]
+        pick = rng.choice(candidates)
+        chosen.append(pick)
+        remaining.remove(pick)
+    return chosen
+
+def pick_questions(research_skills, collection=None, rng=None):
     """research_skills: the skills list from research(), like [{"skill": "sql", "importance": "high"}, ...]
     Returns the test questions in the format of GET /test in docs/API_CONTRACT.md. No answers, no rubric."""
     if collection is None:
         collection = chromadb.PersistentClient(path=str(DB_PATH)).get_collection(COLLECTION)
+    if rng is None:
+        rng = random.Random()
     picked = []
     for item in research_skills:
         result = collection.get(where={"skill": item["skill"]})
-        questions = sorted(
-            zip(result["ids"], result["documents"], result["metadatas"]),
-            key=lambda q: (DIFFICULTY_ORDER.get(q[2]["difficulty"], 1), q[0]),   # easiest first
-        )
-        for question_id, text, _meta in questions[:PER_IMPORTANCE.get(item["importance"], 1)]:
+        questions = [
+            (question_id, text, meta["difficulty"])
+            for question_id, text, meta in zip(result["ids"], result["documents"], result["metadatas"])
+        ]
+        wanted = PER_IMPORTANCE.get(item["importance"], 1)
+        for question_id, text, _difficulty in spread_pick(questions, wanted, rng):
             picked.append({"question_id": question_id, "skill": item["skill"], "text": text})
     for number, question in enumerate(picked, start=1):
         question["number"] = number
