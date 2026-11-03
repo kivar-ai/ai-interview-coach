@@ -45,8 +45,9 @@ def init_db():
                 test_id INTEGER NOT NULL,
                 question_id TEXT NOT NULL,
                 answer TEXT NOT NULL,
-                score INTEGER NOT NULL,
-                max_score INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                score INTEGER,
+                max_score INTEGER,
                 feedback TEXT,
                 missed_points TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -118,14 +119,59 @@ def has_answer(test_id, question_id):
     return row is not None
 
 
-def save_answer(test_id, question_id, answer, result):
+def save_pending_answer(test_id, question_id, answer):
+    """Store the answer at once. It is graded later, in the background."""
     with connect() as conn:
         conn.execute(
-            "INSERT INTO answers (test_id, question_id, answer, score, max_score, feedback, missed_points) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (_number(test_id, "t_"), question_id, answer, result["score"], result["max_score"],
-             result["feedback"], json.dumps(result["missed_points"])),
+            "INSERT INTO answers (test_id, question_id, answer, status) VALUES (?, ?, ?, 'pending')",
+            (_number(test_id, "t_"), question_id, answer),
         )
+
+
+def finish_answer(test_id, question_id, result):
+    with connect() as conn:
+        conn.execute(
+            "UPDATE answers SET status = 'done', score = ?, max_score = ?, feedback = ?, missed_points = ? "
+            "WHERE test_id = ? AND question_id = ?",
+            (result["score"], result["max_score"], result["feedback"], json.dumps(result["missed_points"]),
+             _number(test_id, "t_"), question_id),
+        )
+
+
+def fail_answer(test_id, question_id, message):
+    with connect() as conn:
+        conn.execute(
+            "UPDATE answers SET status = 'failed', feedback = ? WHERE test_id = ? AND question_id = ?",
+            (message, _number(test_id, "t_"), question_id),
+        )
+
+
+def get_results(student_id, test_id):
+    """Every question of the test with its answer status, in order. None if the test is not this student's."""
+    student_number, test_number = _number(student_id, "s_"), _number(test_id, "t_")
+    if student_number is None or test_number is None:
+        return None
+    with connect() as conn:
+        owner = conn.execute("SELECT 1 FROM tests WHERE id = ? AND student_id = ?",
+                             (test_number, student_number)).fetchone()
+        if owner is None:
+            return None
+        rows = conn.execute(
+            "SELECT q.number AS number, q.question_id AS question_id, q.skill AS skill, q.text AS text, "
+            "       a.status AS status, a.score AS score, a.max_score AS max_score, "
+            "       a.feedback AS feedback, a.missed_points AS missed_points "
+            "FROM test_questions q "
+            "LEFT JOIN answers a ON a.test_id = q.test_id AND a.question_id = q.question_id "
+            "WHERE q.test_id = ? ORDER BY q.number",
+            (test_number,),
+        ).fetchall()
+    results = []
+    for row in rows:
+        item = dict(row)
+        item["status"] = item["status"] or "unanswered"        # no answer row yet
+        item["missed_points"] = json.loads(item["missed_points"] or "[]")
+        results.append(item)
+    return results
 
 def get_answer_rows(student_id):
     """Every answer of this student, with the skill of its question."""
@@ -135,7 +181,7 @@ def get_answer_rows(student_id):
             "FROM answers a "
             "JOIN test_questions q ON q.test_id = a.test_id AND q.question_id = a.question_id "
             "JOIN tests t ON t.id = a.test_id "
-            "WHERE t.student_id = ?",
+            "WHERE t.student_id = ? AND a.status = 'done'",
             (_number(student_id, "s_"),),
         ).fetchall()
     return [dict(row) for row in rows]
@@ -148,7 +194,7 @@ def get_missed_points(student_id):
             "FROM answers a "
             "JOIN test_questions q ON q.test_id = a.test_id AND q.question_id = a.question_id "
             "JOIN tests t ON t.id = a.test_id "
-            "WHERE t.student_id = ? ORDER BY a.id",
+            "WHERE t.student_id = ? AND a.status = 'done' ORDER BY a.id",
             (_number(student_id, "s_"),),
         ).fetchall()
     result = {}

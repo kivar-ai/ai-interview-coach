@@ -34,7 +34,7 @@ db.init_db()
 RESEARCH_RUNNING = set()        # jobs running right now, like "data_scientist__wipro"
 RESEARCH_FAILED = {}            # job key -> error message, shown once
 RESEARCH_LOCK = threading.Lock()
-
+GRADE_LOCK = threading.Lock()      # the model grades one answer at a time
 
 def cache_key(student):
     return f"{student['target_role']}__{research.slug(student['company'])}"
@@ -112,20 +112,35 @@ class AnswerIn(BaseModel):
     question_id: str
     answer: str = Field(max_length=4000)
 
+def run_grading(test_id, question_id, answer):
+    """Runs in the background. Grades one answer and stores the result."""
+    with GRADE_LOCK:
+        try:
+            result = grader.grade_answer(question_id, answer)
+            db.finish_answer(test_id, question_id, result)
+        except Exception as error:               # a background job must never die silently
+            db.fail_answer(test_id, question_id, f"Grading failed: {error}")
 
 @app.post("/test/answer")
-def submit_answer(body: AnswerIn):
+def submit_answer(body: AnswerIn, background: BackgroundTasks):
     question = db.get_test_question(body.student_id, body.test_id, body.question_id)
     if question is None:
         raise HTTPException(status_code=404, detail="This question is not part of that student's test.")
     if db.has_answer(body.test_id, body.question_id):
         raise HTTPException(status_code=409, detail="This question was already answered.")
-    try:
-        result = grader.grade_answer(body.question_id, body.answer)
-    except ValueError as error:                      # the grader could not read the model's reply
-        raise HTTPException(status_code=502, detail=str(error))
-    db.save_answer(body.test_id, body.question_id, body.answer, result)
-    return result
+    db.save_pending_answer(body.test_id, body.question_id, body.answer)
+    background.add_task(run_grading, body.test_id, body.question_id, body.answer)
+    return JSONResponse(status_code=202, content={"status": "grading"})
+
+@app.get("/test/results")
+def test_results(student_id: str, test_id: str):
+    results = db.get_results(student_id, test_id)
+    if results is None:
+        raise HTTPException(status_code=404, detail="That test does not belong to this student.")
+    graded = sum(1 for r in results if r["status"] in ("done", "failed"))
+    answered = sum(1 for r in results if r["status"] != "unanswered")
+    return {"total": len(results), "answered": answered, "graded": graded,
+            "finished": graded == len(results), "questions": results}
 
 class ResearchIn(BaseModel):
     student_id: str
