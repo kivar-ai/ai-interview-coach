@@ -31,61 +31,75 @@ class GraderTests(unittest.TestCase):
         text = grader.build_feedback(POINTS, ["yes", "no", "no", "no"])
         self.assertIn("B keeps all left rows", text)
 
+def box(said, mark):
+    """One model reply for ONE rubric point."""
+    return json.dumps({"student_said": said, "mark": mark})
+
+
 class FakeClient:
-    """Pretends to be the model. It always answers with the text we give it."""
-    def __init__(self, reply_text):
-        self.reply_text = reply_text
+    """Pretends to be the model. It answers with the replies we give it, one per call, in order."""
+    def __init__(self, replies):
+        self.replies = list(replies)
+        self.prompts = []
 
     def chat(self, **kwargs):
-        return NS(message=NS(content=self.reply_text))
+        self.prompts.append(kwargs["messages"][0]["content"])
+        return NS(message=NS(content=self.replies.pop(0)))
 
 
 class JudgeTests(unittest.TestCase):
     def test_empty_answer_never_calls_the_model(self):
-        grader._client = FakeClient("this would crash if it were used")
+        grader._client = FakeClient(["this would crash if it were used"])
         self.assertEqual(grader.judge_points("Q", POINTS, "   "), ["no"] * 4)
 
     def test_a_yes_without_real_words_becomes_no(self):
-        reply = json.dumps({
-            "point_1": {"student_said": "inner join keeps matching rows", "mark": "yes"},
-            "point_2": {"student_said": "it keeps everything on the left", "mark": "yes"},  # not in the answer
-            "point_3": {"student_said": "", "mark": "yes"},                                  # empty words
-            "point_4": {"student_said": "", "mark": "no"},
-        })
-        grader._client = FakeClient(reply)
+        grader._client = FakeClient([
+            box("inner join keeps matching rows", "yes"),
+            box("it keeps everything on the left", "yes"),   # not in the answer
+            box("", "yes"),                                   # empty words
+            box("", "no"),
+        ])
         marks = grader.judge_points("Q", POINTS, "Inner join keeps matching rows only.")
         self.assertEqual(marks, ["yes", "no", "no", "no"])
 
     def test_an_unreadable_model_answer_raises_an_error(self):
-        grader._client = FakeClient("not json at all")
+        grader._client = FakeClient(["not json at all"])
         with self.assertRaises(ValueError):
             grader.judge_points("Q", POINTS, "some answer")
 
     def test_a_quote_with_one_changed_word_still_counts(self):
-        reply = json.dumps({
-            "point_1": {"student_said": "compare training performance with validation performance", "mark": "yes"},
-            "point_2": {"student_said": "", "mark": "no"},
-            "point_3": {"student_said": "", "mark": "no"},
-            "point_4": {"student_said": "", "mark": "no"},
-        })
-        grader._client = FakeClient(reply)
+        grader._client = FakeClient([
+            box("compare training performance with validation performance", "yes"),
+            box("", "no"),
+            box("", "no"),
+            box("", "no"),
+        ])
         answer = "You can spot it by comparing training performance with validation performance."
         self.assertEqual(grader.judge_points("Q", POINTS, answer)[0], "yes")
+
+    def test_each_point_gets_its_own_model_call_with_only_that_point(self):
+        client = FakeClient([box("", "no")] * 4)
+        grader._client = client
+        grader.judge_points("Q", POINTS, "some answer")
+        self.assertEqual(len(client.prompts), 4)
+        self.assertIn(POINTS[0], client.prompts[0])
+        self.assertNotIn(POINTS[1], client.prompts[0])
+
 
 class GradeAnswerTests(unittest.TestCase):
     def test_result_has_exactly_the_contract_fields(self):
         question = {"id": "q_x", "text": "Q", "skill": "sql", "rubric": POINTS}
-        reply = json.dumps({
-            "point_1": {"student_said": "inner join keeps matching rows", "mark": "yes"},
-            "point_2": {"student_said": "", "mark": "no"},
-            "point_3": {"student_said": "", "mark": "no"},
-            "point_4": {"student_said": "", "mark": "no"},
-        })
-        grader._client = FakeClient(reply)
+        grader._client = FakeClient([
+            box("inner join keeps matching rows", "yes"),
+            box("", "no"),
+            box("", "no"),
+            box("", "no"),
+        ])
         result = grader.grade_answer("q_x", "Inner join keeps matching rows.", question=question)
         self.assertEqual(sorted(result), ["feedback", "max_score", "missed_points", "score"])
         self.assertEqual(result["score"], 3)
         self.assertEqual(len(result["missed_points"]), 3)
+
 
 if __name__ == "__main__":
     unittest.main()
