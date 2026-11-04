@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
 
+function wordCount(text) {
+  const t = text.trim();
+  return t === "" ? 0 : t.split(/\s+/).length;
+}
+
+function scoreClass(score, max) {
+  const share = max > 0 ? score / max : 0;
+  if (share >= 0.7) return "good";
+  if (share >= 0.4) return "mid";
+  return "low";
+}
+
 function TestScreen({ studentId, options, onDone, practice = false }) {
   const [test, setTest] = useState(null);
   const [index, setIndex] = useState(0);
@@ -85,53 +97,91 @@ function TestScreen({ studentId, options, onDone, practice = false }) {
       .finally(() => setBusy(false));
   }
 
-  if (error && !test) return <p style={{ color: "red" }}>{error}</p>;
-  if (!test) return <p>Preparing your test...</p>;
-
-  if (finishedAnswering) {
+  if (error && !test) {
     return (
       <div>
-        <h2>Your results</h2>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {!results && <p>Checking...</p>}
-        {results && !results.finished && (
-          <p>
-            Graded {results.graded} of {results.total} answers. Each one takes about a minute, please wait...
-          </p>
-        )}
-        {results &&
-          results.questions.map((q) => (
-            <div key={q.question_id}>
-              <h3>
-                {q.number}. {q.text} <i>({skillName(q.skill)})</i>
-              </h3>
-              {q.status === "done" && (
-                <div>
-                  <p>
-                    <b>
-                      Score: {q.score} / {q.max_score}
-                    </b>
-                  </p>
-                  <p>{q.feedback}</p>
-                  {q.missed_points.length > 0 && (
-                    <ul>
-                      {q.missed_points.map((m) => (
-                        <li key={m}>{m}</li>
-                      ))}
-                    </ul>
+        <h2>The test could not start</h2>
+        <p className="error" role="alert">{error}</p>
+        <p className="lead">Check that the backend is running, then refresh the page.</p>
+      </div>
+    );
+  }
+  if (!test) {
+    return (
+      <div>
+        <h2>{practice ? "Picking your practice questions" : "Preparing your test"}</h2>
+        <p className="lead">One moment...</p>
+      </div>
+    );
+  }
+
+  if (finishedAnswering) {
+    const graded = results ? results.graded : 0;
+    const total = results ? results.total : test.questions.length;
+    const percent = total > 0 ? Math.round((graded / total) * 100) : 0;
+    return (
+      <div>
+        <h2>{results && results.finished ? "Your results" : "Grading your answers"}</h2>
+        <p className="lead">
+          {results && results.finished
+            ? "Every answer is marked. Open the gap report to see where you stand against the job."
+            : "Each answer takes about a minute to mark. You can read the finished ones while the rest are worked on."}
+        </p>
+
+        <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={graded}>
+          <div className="meter-bar"><span style={{ width: `${percent}%` }} /></div>
+          <span className="meter-text">{graded} of {total} marked</span>
+        </div>
+
+        {error && <p className="error" role="alert">{error}</p>}
+
+        <div className="answers">
+          {results ? (
+            results.questions.map((q) => (
+              <article className={`answer ${q.status}`} key={q.question_id}>
+                <header>
+                  <span className="qnum">{q.number}</span>
+                  <span className="chip">{skillName(q.skill)}</span>
+                  {q.status === "done" && (
+                    <span className={`score ${scoreClass(q.score, q.max_score)}`}>
+                      {q.score}<small> / {q.max_score}</small>
+                    </span>
                   )}
-                </div>
-              )}
-              {q.status === "failed" && (
-                <p style={{ color: "red" }}>This answer could not be graded. {q.feedback}</p>
-              )}
-              {(q.status === "pending" || q.status === "unanswered") && <p>Waiting to be graded...</p>}
-            </div>
-          ))}
+                  {q.status === "failed" && <span className="state failed">Could not be marked</span>}
+                  {(q.status === "pending" || q.status === "unanswered") && (
+                    <span className="state waiting"><i className="blink" aria-hidden="true" />Marking...</span>
+                  )}
+                </header>
+                <p className="q-text">{q.text}</p>
+                {q.status === "done" && (
+                  <>
+                    <p className="feedback">{q.feedback}</p>
+                    {q.missed_points.length > 0 && (
+                      <div className="missed">
+                        <strong>Add these next time</strong>
+                        <ul>
+                          {q.missed_points.map((m) => (
+                            <li key={m}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
+                {q.status === "failed" && <p className="error small">{q.feedback}</p>}
+              </article>
+            ))
+          ) : (
+            <p className="hint">Checking...</p>
+          )}
+        </div>
+
         {results && results.finished && (
-          <button onClick={onDone}>
-            {practice ? "See my updated gap report" : "See my gap report"}
-          </button>
+          <p className="actions">
+            <button onClick={onDone}>
+              {practice ? "See my updated gap report" : "See my gap report"}
+            </button>
+          </p>
         )}
       </div>
     );
@@ -139,34 +189,54 @@ function TestScreen({ studentId, options, onDone, practice = false }) {
 
   const q = test.questions[index];
   const skipped = test.skipped_skills || [];
+  const words = wordCount(answer);
+  const last = index + 1 >= test.questions.length;
 
   return (
     <div>
-      <h2>
-        Question {index + 1} of {test.questions.length}
-      </h2>
-      <p>
-        <i>{skillName(q.skill)}</i>
-      </p>
-      <p>{q.text}</p>
+      <div className="progress" aria-label={`Question ${index + 1} of ${test.questions.length}`}>
+        <ol className="pips">
+          {test.questions.map((item, i) => (
+            <li key={item.question_id} className={i < index ? "done" : i === index ? "now" : ""} />
+          ))}
+        </ol>
+        <span className="progress-text">
+          {practice ? "Practice" : "Question"} {index + 1} of {test.questions.length}
+        </span>
+      </div>
 
-      <textarea
-        rows={6}
-        cols={60}
-        value={answer}
-        disabled={busy}
-        onChange={(e) => setAnswer(e.target.value)}
-      />
-      <p>
+      <span className="chip big">{skillName(q.skill)}</span>
+      <h2 className="question">{q.text}</h2>
+
+      <div className="field">
+        <label htmlFor="answer">Your answer</label>
+        <textarea
+          id="answer"
+          rows={7}
+          value={answer}
+          disabled={busy}
+          placeholder="Explain it in your own words, as you would to an interviewer."
+          onChange={(e) => setAnswer(e.target.value)}
+        />
+        <div className="under">
+          <span className="hint">Three to six sentences is enough. An empty answer scores 0.</span>
+          <span className="hint">{words} {words === 1 ? "word" : "words"}</span>
+        </div>
+      </div>
+
+      <p className="actions">
         <button onClick={submit} disabled={busy}>
-          {busy ? "Saving..." : index + 1 < test.questions.length ? "Submit and next" : "Submit last answer"}
+          {busy ? "Saving..." : last ? "Submit last answer" : "Submit and next"}
         </button>
       </p>
+      <p className="hint">Your answer is marked in the background while you move on.</p>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
 
       {skipped.length > 0 && (
-        <p>Not tested yet (no questions): {skipped.map(skillName).join(", ")}</p>
+        <p className="hint skipped">
+          Not tested yet because we have no questions for them: {skipped.map(skillName).join(", ")}.
+        </p>
       )}
     </div>
   );
