@@ -42,7 +42,25 @@ function App() {
       {screen === "report" && (
         <ReportScreen studentId={profile.studentId} options={options} onNext={() => setScreen("plan")} />
       )}
-      {screen === "plan" && <PlanScreen studentId={profile.studentId} options={options} />}
+      {screen === "plan" && (
+        <PlanScreen
+          studentId={profile.studentId}
+          options={options}
+          onPractice={() => setScreen("practice")}
+          onRestart={() => {
+            setProfile(null);
+            setScreen("profile");
+          }}
+        />
+      )}
+      {screen === "practice" && (
+        <TestScreen
+          studentId={profile.studentId}
+          options={options}
+          practice
+          onDone={() => setScreen("report")}
+        />
+      )}
     </div>
   );
 }

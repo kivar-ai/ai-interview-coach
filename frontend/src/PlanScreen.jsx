@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
 
-function PlanScreen({ studentId, options }) {
+function PlanScreen({ studentId, options, onPractice, onRestart }) {
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState("");
 
@@ -56,6 +56,10 @@ function PlanScreen({ studentId, options }) {
           )}
         </div>
       ))}
+      <p>
+        <button onClick={onPractice}>Start a practice round on my gaps</button>{" "}
+        <button onClick={onRestart}>Finish and start over</button>
+      </p>
     </div>
   );
 }

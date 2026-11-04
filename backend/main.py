@@ -106,6 +106,20 @@ def get_test(student_id: str):
     test_id = db.create_test(student_id, questions)
     return {"test_id": test_id, "total": len(questions), "questions": questions, "skipped_skills": skipped}
 
+@app.get("/practice")
+def get_practice(student_id: str):
+    """A second round of questions, only from the student's biggest gaps."""
+    report = report_for(student_id)
+    if not report["top_gaps"]:
+        raise HTTPException(status_code=409, detail="No gaps to practise yet. Finish the test first.")
+    questions = question_bank.pick_questions(
+        [{"skill": skill, "importance": "medium"} for skill in report["top_gaps"]]
+    )
+    if not questions:
+        raise HTTPException(status_code=409, detail="There are no questions for your gap skills yet.")
+    test_id = db.create_test(student_id, questions)
+    return {"test_id": test_id, "total": len(questions), "questions": questions, "skipped_skills": []}
+
 class AnswerIn(BaseModel):
     student_id: str
     test_id: str

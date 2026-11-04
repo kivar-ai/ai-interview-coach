@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
 
-function TestScreen({ studentId, options, onDone }) {
+function TestScreen({ studentId, options, onDone, practice = false }) {
   const [test, setTest] = useState(null);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -11,7 +11,7 @@ function TestScreen({ studentId, options, onDone }) {
 
   useEffect(() => {
     let stopped = false;
-    fetch(`${API}/test?student_id=${studentId}`)
+    fetch(`${API}/${practice ? "practice" : "test"}?student_id=${studentId}`)
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
@@ -26,7 +26,7 @@ function TestScreen({ studentId, options, onDone }) {
     return () => {
       stopped = true;
     };
-  }, [studentId]);
+  }, [studentId, practice]);
 
   const finishedAnswering = test !== null && index >= test.questions.length;
 
@@ -128,7 +128,11 @@ function TestScreen({ studentId, options, onDone }) {
               {(q.status === "pending" || q.status === "unanswered") && <p>Waiting to be graded...</p>}
             </div>
           ))}
-        {results && results.finished && <button onClick={onDone}>See my gap report</button>}
+        {results && results.finished && (
+          <button onClick={onDone}>
+            {practice ? "See my updated gap report" : "See my gap report"}
+          </button>
+        )}
       </div>
     );
   }
