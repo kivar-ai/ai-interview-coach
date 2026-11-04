@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
+import Shell from "./Shell";
 import ProfileScreen from "./ProfileScreen";
 import ResearchScreen from "./ResearchScreen";
 import TestScreen from "./TestScreen";
@@ -21,9 +22,10 @@ function App() {
   if (options === null) return <p>Loading...</p>;
   if (options.error) return <p>The backend is not reachable.</p>;
 
+  const roleName = options.roles.find((r) => r.id === profile?.role)?.name;
+
   return (
-    <div>
-      <h1>AI Interview Coach</h1>
+    <Shell screen={screen} profile={profile} roleName={roleName}>
       {screen === "profile" && (
         <ProfileScreen
           options={options}
@@ -61,7 +63,7 @@ function App() {
           onDone={() => setScreen("report")}
         />
       )}
-    </div>
+    </Shell>
   );
 }
 
