@@ -76,21 +76,32 @@ Response
 }
 ```
 
-## 4. Submit and grade one test answer
+## 4. Submit one test answer (graded in the background)
 `POST /test/answer`
 
 Request
-```json
 {"student_id": "s_001", "test_id": "t_001", "question_id": "q_sql_001", "answer": "INNER JOIN gives matching rows..."}
-```
+
+Response: 202
+{"status": "grading"}
+
+The answer is saved at once. Grading takes about a minute and runs in the background.
+Errors: 404 the question is not part of that student's test, 409 it was already answered.
+
+## 4b. Check the grading progress
+`GET /test/results?student_id=s_001&test_id=t_001`
+
 Response
-```json
 {
-  "score": 4,
-  "max_score": 10,
-  "feedback": "You covered INNER JOIN but did not explain what LEFT JOIN keeps.",
-  "missed_points": ["LEFT JOIN keeps all rows from the left table", "Unmatched right-side columns become NULL"]
+  "total": 11, "answered": 3, "graded": 2, "finished": false,
+  "questions": [
+    {"number": 1, "question_id": "q_sql_001", "skill": "sql", "text": "...",
+     "status": "done", "score": 4, "max_score": 10, "feedback": "...", "missed_points": ["..."]}
+  ]
 }
+
+status is one of: unanswered, pending (being graded), done, failed. finished is true when every
+question is done or failed. For a failed answer, feedback says why.
 ```
 
 ## 5. The gap report
