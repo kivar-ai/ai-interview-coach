@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API } from "./api";
+import Interviewer from "./Interviewer";
 
 function wordCount(text) {
   const t = text.trim();
@@ -205,8 +206,14 @@ function TestScreen({ studentId, options, onDone, practice = false }) {
         </span>
       </div>
 
-      <span className="chip big">{skillName(q.skill)}</span>
-      <h2 className="question">{q.text}</h2>
+      {practice ? (
+        <Interviewer text={q.text} skill={skillName(q.skill)} />
+      ) : (
+        <>
+          <span className="chip big">{skillName(q.skill)}</span>
+          <h2 className="question">{q.text}</h2>
+        </>
+      )}
 
       <div className="field">
         <label htmlFor="answer">Your answer</label>
