@@ -7,6 +7,7 @@ import argparse
 import csv
 import random
 import json
+import os
 from pathlib import Path
 
 import chromadb
@@ -20,6 +21,8 @@ EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 _model = None
 
 PER_IMPORTANCE = {"high": 3, "medium": 2, "low": 1}   # how many questions each skill gets
+if os.environ.get("COACH_DEMO"):
+    PER_IMPORTANCE = {"high": 1, "medium": 1, "low": 1}   # demo mode: one question per skill
 DIFFICULTY_ORDER = {"easy": 0, "medium": 1, "hard": 2}
 
 def embed(texts):
