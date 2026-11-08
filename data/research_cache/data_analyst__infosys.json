@@ -1,0 +1,74 @@
+{
+  "role": "data_analyst",
+  "role_name": "Data Analyst",
+  "company": "infosys",
+  "skills": [
+    {
+      "skill": "communication",
+      "importance": "high",
+      "sources": [
+        "https://www.skillsetmaster.com/data-analyst-interview/infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "data_analysis",
+      "importance": "high",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "data_visualization",
+      "importance": "high",
+      "sources": [
+        "https://www.acte.in/how-to-get-a-data-analyst-job-at-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "sql",
+      "importance": "high",
+      "sources": [
+        "https://www.acte.in/how-to-get-a-data-analyst-job-at-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "statistics",
+      "importance": "high",
+      "sources": [
+        "https://www.acte.in/how-to-get-a-data-analyst-job-at-infosys"
+      ],
+      "basis": "web"
+    },
+    {
+      "skill": "python",
+      "importance": "medium",
+      "sources": [],
+      "basis": "base_profile"
+    },
+    {
+      "skill": "machine_learning",
+      "importance": "low",
+      "sources": [],
+      "basis": "base_profile"
+    }
+  ],
+  "pages_read": [
+    {
+      "url": "https://www.acte.in/how-to-get-a-data-analyst-job-at-infosys",
+      "read": true
+    },
+    {
+      "url": "https://www.skillsetmaster.com/data-analyst-interview/infosys",
+      "read": true
+    }
+  ],
+  "cached": false,
+  "warnings": [],
+  "dropped_unverified": [
+    "data_analysis",
+    "python"
+  ],
+  "seconds": 259
+}
