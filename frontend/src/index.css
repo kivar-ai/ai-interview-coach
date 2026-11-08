@@ -365,3 +365,33 @@ h2.question { font-size: 1.9rem; line-height: 1.25; max-width: 30ch; margin-bott
   .t-card { padding: 16px 16px 16px; }
   .cta { padding: 20px 18px 6px; }
 }
+
+/* ---------- Interviewer (practice round) ---------- */
+.interviewer { display: flex; gap: 22px; align-items: flex-start; margin: 0 0 26px; }
+.avatar { flex: none; width: 124px; height: 124px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px var(--line); transition: box-shadow 0.3s; }
+.avatar.speaking { box-shadow: 0 0 0 4px var(--paper), 0 0 0 7px var(--green); animation: glow 1.6s ease-in-out infinite; }
+.face { display: block; width: 100%; height: 100%; }
+.face .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.6s infinite; }
+.face .mouth { transform-box: fill-box; transform-origin: center; animation: talk 0.42s ease-in-out infinite alternate; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes talk { from { transform: scaleY(0.3); } to { transform: scaleY(1); } }
+@keyframes glow { 50% { box-shadow: 0 0 0 4px var(--paper), 0 0 0 11px rgba(14, 107, 82, 0.2); } }
+
+.bubble { position: relative; flex: 1; min-width: 0; background: var(--paper); border: 1.5px solid var(--line); border-radius: 6px 20px 20px 20px; padding: 16px 22px 16px; }
+.bubble::before { content: ""; position: absolute; left: -9px; top: 22px; width: 16px; height: 16px; background: var(--paper); border-left: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); transform: rotate(45deg); }
+.who { display: block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green-deep); margin-bottom: 6px; }
+.bubble .q { font-family: var(--font-head); font-size: 1.55rem; line-height: 1.28; font-weight: 650; letter-spacing: -0.01em; margin: 0 0 14px; }
+.voice { display: flex; flex-wrap: wrap; gap: 8px; }
+button.small { padding: 6px 14px; font-size: 0.88rem; border-radius: 8px; }
+
+@media (max-width: 860px) {
+  .interviewer { flex-direction: column; gap: 16px; }
+  .avatar { width: 92px; height: 92px; }
+  .bubble { border-radius: 18px; padding: 14px 16px; }
+  .bubble::before { left: 34px; top: -9px; border-left: 1.5px solid var(--line); border-top: 1.5px solid var(--line); border-bottom: 0; }
+  .bubble .q { font-size: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .face .eyes, .face .mouth, .avatar.speaking { animation: none; }
+  .face .mouth { transform: scaleY(0.7); }
+}
