@@ -1,18 +1,77 @@
-# API contract (Contract 3)
+# API contract
 
-This file is the single source of truth for what the **screen** sends and what the **AI core** returns.
-The screen is built against these examples (using a fake API) before the real pipeline exists.
-Change this file only through a pull request that all three of us approve.
+This file is the single source of truth for what the **screen** sends and what the **backend** answers.
+It matches the running backend (`backend/main.py`). Change it only through a pull request.
 
-- Base address while developing: `http://localhost:8000`
-- All bodies are JSON. Errors always look like `{"error": "short message"}`.
-- Ids used everywhere: skill ids come from `data/skills.json`, role ids from `data/roles.json`.
+- Base address while developing: `http://127.0.0.1:8000`. The backend allows pages from `http://localhost:5173`.
+- Every request and reply is JSON. Errors always look like `{"error": "short message"}`.
+- Ids: skill ids come from `data/skills.json`, role ids from `data/roles.json`.
 - Self-rating values: `beginner`, `intermediate`, `advanced`. Importance values: `high`, `medium`, `low`.
-- Scores for one answer are whole numbers from 0 to 10. Skill scores in the report are 0 to 100.
+- Scores: one answer is a whole number from 0 to 10. A skill score in the report is 0 to 100.
+- The backend also serves a live, clickable version of this page at <http://127.0.0.1:8000/docs>.
+
+## The order of calls
+
+```mermaid
+sequenceDiagram
+    participant S as Screen
+    participant B as Backend
+    S->>B: GET /options
+    S->>B: POST /profile
+    B-->>S: student_id
+    S->>B: POST /research (repeat every 5 s while 202)
+    B-->>S: 200 skills for the job
+    S->>B: GET /test
+    B-->>S: test_id and questions
+    loop each question
+        S->>B: POST /test/answer
+        B-->>S: 202 grading
+    end
+    loop every 5 s until finished
+        S->>B: GET /test/results
+    end
+    S->>B: GET /report
+    S->>B: GET /plan
+    S->>B: GET /practice (a new test)
+    Note over S,B: then POST /test/answer and GET /test/results again
+```
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Is the backend alive |
+| `GET /options` | Roles and skills for the profile screen |
+| `POST /profile` | Save the student |
+| `POST /research` | Research the job (the agent) |
+| `GET /test` | Create a test and get its questions |
+| `POST /test/answer` | Save one answer, marking starts in the background |
+| `GET /test/results` | Progress and results of a test |
+| `GET /practice` | Create a practice test on the biggest gaps |
+| `GET /report` | The gap report |
+| `GET /plan` | The study plan |
 
 ---
 
-## 1. Save the student profile
+## 0. Health
+`GET /health`
+
+Response
+```json
+{"status": "ok"}
+```
+
+## 1. Options for the profile screen
+`GET /options`
+
+Response (shortened)
+```json
+{
+  "roles": [{"id": "data_analyst", "name": "Data Analyst"}, {"id": "data_scientist", "name": "Data Scientist"}],
+  "skills": [{"id": "python", "name": "Python"}, {"id": "sql", "name": "SQL"}]
+}
+```
+There are 8 roles and 12 skills. The lists come straight from `data/roles.json` and `data/skills.json`.
+
+## 2. Save the student profile
 `POST /profile`
 
 Request
@@ -25,22 +84,29 @@ Request
   "self_rating": {"python": "intermediate", "sql": "advanced", "statistics": "beginner"}
 }
 ```
+`name`, `target_role` and `self_rating` are required. `company` and `job_description` may be `null`.
+
 Response
 ```json
 {"student_id": "s_001"}
 ```
+An unknown role or skill id gives an error reply.
 
-## 2. Research the job (the agent)
+## 3. Research the job (the agent)
 `POST /research`
 
 Request
 ```json
 {"student_id": "s_001"}
 ```
-Response
+- **`200`** the result is ready (instant when the role and company were researched before).
+- **`202`** research is running. The screen asks again every 5 seconds until it gets `200`.
+
+Response when ready
 ```json
 {
   "role": "data_scientist",
+  "role_name": "Data Scientist",
   "company": "Infosys",
   "skills": [
     {"skill": "sql", "importance": "high", "sources": ["https://example.com/job-post"], "basis": "web"},
@@ -56,68 +122,87 @@ Response
   "seconds": 180
 }
 ```
-`basis` says where a skill came from: `web` = proven by a page we read (the `sources` hold the proof),
-`base_profile` = taken from our own role profile because the pages did not mention it (`sources` is empty).
-The screen can show the two differently, for example a small "from web" label. `warnings` holds messages to show
-the student (for example "Only 1 page could be read"). `dropped_unverified` and `seconds` are for us, not for students.
-“If the job has not been researched before, this call answers 202 with {"status": "working"} and the research runs in the background (it can take a few minutes). Call it again every 5 seconds until it answers 200 with the result.”
+`basis` says where a skill came from: `web` means a page we read proves it (`sources` holds the proof), `base_profile` means it comes from our own role profile (`sources` is empty). `warnings` are messages to show the student. `dropped_unverified` and `seconds` are for us, not for students.
 
-## 3. Get the test questions
+## 4. Get the test questions
 `GET /test?student_id=s_001`
 
 Response
 ```json
 {
   "test_id": "t_001",
-  "total": 12,
+  "total": 5,
   "questions": [
     {"question_id": "q_sql_001", "number": 1, "skill": "sql", "text": "What is the difference between INNER JOIN and LEFT JOIN?"}
-  ]
+  ],
+  "skipped_skills": ["data_analysis", "communication"]
 }
 ```
+`skipped_skills` lists skills the job needs that have no questions yet. The rubric and ideal answer are never sent to the screen. Every call creates a **new** test.
 
-## 4. Submit one test answer (graded in the background)
+## 5. Submit one answer
 `POST /test/answer`
 
 Request
+```json
 {"student_id": "s_001", "test_id": "t_001", "question_id": "q_sql_001", "answer": "INNER JOIN gives matching rows..."}
+```
+`answer` can be at most 4000 characters.
 
-Response: 202
+Response: **`202`**
+```json
 {"status": "grading"}
+```
+The answer is saved as pending and marked in the background, one at a time. The result is read from `GET /test/results`. An unknown student, test or question gives a `404`. An answer that cannot be accepted gives a `409`.
 
-The answer is saved at once. Grading takes about a minute and runs in the background.
-Errors: 404 the question is not part of that student's test, 409 it was already answered.
-
-## 4b. Check the grading progress
+## 6. Progress and results of a test
 `GET /test/results?student_id=s_001&test_id=t_001`
 
 Response
+```json
 {
-  "total": 11, "answered": 3, "graded": 2, "finished": false,
+  "total": 5,
+  "answered": 5,
+  "graded": 2,
+  "finished": false,
   "questions": [
-    {"number": 1, "question_id": "q_sql_001", "skill": "sql", "text": "...",
-     "status": "done", "score": 4, "max_score": 10, "feedback": "...", "missed_points": ["..."]}
+    {
+      "question_id": "q_sql_001", "number": 1, "skill": "sql",
+      "text": "What is the difference between INNER JOIN and LEFT JOIN?",
+      "status": "done",
+      "score": 4, "max_score": 10,
+      "feedback": "You covered INNER JOIN but not what LEFT JOIN keeps.",
+      "missed_points": ["LEFT JOIN keeps all rows from the left table"]
+    }
   ]
 }
-
-status is one of: unanswered, pending (being graded), done, failed. finished is true when every
-question is done or failed. For a failed answer, feedback says why.
 ```
+`status` is one of `pending` (waiting or being marked), `done`, `failed` (could not be marked, `feedback` says why) or `unanswered`. `score`, `max_score` and `feedback` are only filled when the status is `done`. `finished` becomes `true` when marking is complete. The screen asks every 5 seconds until then.
 
-## 5. The gap report
+## 7. Practice round
+`GET /practice?student_id=s_001`
+
+Same reply as `GET /test` (section 4), with `skipped_skills` always empty. The questions come only from the student's biggest gaps, so the student needs at least one graded test first. If there are no gaps or no questions, the reply is a `409` error. Answers are then sent with `POST /test/answer` and read with `GET /test/results`, exactly as in a normal test.
+
+## 8. The gap report
 `GET /report?student_id=s_001`
 
 Response
 ```json
 {
   "skills": [
-    {"skill": "sql", "job_needs": "high", "self_rating": "advanced", "measured_score": 40, "gap": 50}
+    {"skill": "sql", "job_needs": "high", "self_rating": "advanced", "measured_score": 77, "gap": 13},
+    {"skill": "communication", "job_needs": "high", "self_rating": null, "measured_score": null, "gap": null}
   ],
-  "top_gaps": ["sql", "statistics"]
+  "top_gaps": ["sql"]
 }
 ```
+- `measured_score` is the average of the skill's graded answers in percent. It is `null` when the skill was never tested.
+- `gap` is the target minus `measured_score`, never below 0. Targets: high 90, medium 70, low 50. It is `null` for untested skills.
+- `self_rating` is `null` when the student did not rate the skill.
+- `top_gaps` holds up to 3 tested skills that are below their target, biggest gap first.
 
-## 6. The study plan
+## 9. The study plan
 `GET /plan?student_id=s_001`
 
 Response
@@ -127,62 +212,26 @@ Response
     {
       "order": 1,
       "skill": "sql",
-      "title": "Master joins and aggregation",
-      "tasks": ["Practise INNER and LEFT JOIN on two small tables"],
-      "resources": [{"title": "Example resource", "url": "https://example.com"}]
+      "title": "Strengthen SQL",
+      "tasks": [
+        "Revise: HAVING can use aggregates and WHERE cannot",
+        "Answer practice questions on SQL out loud, then check them against the key points."
+      ],
+      "resources": [{"title": "SQL Tutorial (W3Schools)", "url": "https://www.w3schools.com/sql/"}]
     }
   ]
 }
 ```
+One step for each of the top gaps. Up to 3 tasks are "Revise: ..." points the student missed, and one practice task is added. `resources` comes only from `data/resources.json` and can be empty.
 
-## 7. Mock interview
-`POST /interview/start`
+---
 
-Request
-```json
-{"student_id": "s_001", "focus_skills": ["sql", "statistics"], "num_questions": 5}
-```
-Response
-```json
-{"session_id": "m_001", "question": {"question_id": "q_sql_002", "number": 1, "skill": "sql", "text": "What is the difference between WHERE and HAVING?"}}
-```
+## Planned, not built yet
 
-`POST /interview/answer`
+These were in the first version of this contract. The practice round (section 7) took the place of the mock interview, and the rest are still to do.
 
-Request
-```json
-{"session_id": "m_001", "answer": "WHERE filters rows, HAVING filters groups."}
-```
-Response
-```json
-{
-  "score": 7,
-  "max_score": 10,
-  "feedback": "Good. Add that HAVING can use aggregates.",
-  "missed_points": ["HAVING can use aggregate functions"],
-  "next_question": {"question_id": "q_sql_003", "number": 2, "skill": "sql", "text": "..."},
-  "finished": false
-}
-```
-When `finished` is `true`, `next_question` is `null`.
-
-## 8. Progress
-`GET /progress?student_id=s_001`
-
-Response
-```json
-{"history": [{"date": "2026-10-26", "skill": "sql", "score": 40}, {"date": "2026-10-30", "skill": "sql", "score": 65}]}
-```
-
-## 9. Ask a doubt (optional feature, build last)
-`POST /doubt`
-
-Request
-```json
-{"student_id": "s_001", "text": "Explain LEFT JOIN"}
-```
-Response
-```json
-{"found": true, "answer": "A LEFT JOIN keeps every row from the left table...", "source_question_ids": ["q_sql_001"]}
-```
-When nothing relevant is found: `{"found": false, "answer": "I don't have this yet."}`.
+| Idea | Planned endpoint |
+|---|---|
+| Live mock interview | `POST /interview/start`, `POST /interview/answer` |
+| Progress over time | `GET /progress?student_id=...` |
+| Ask a doubt | `POST /doubt` |
