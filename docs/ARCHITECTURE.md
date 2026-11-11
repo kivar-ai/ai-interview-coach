@@ -283,5 +283,5 @@ Errors always look like `{"error": "short message"}`.
 | A page refresh loses the current test | The test and student id live in browser memory |
 | Marking is slow | One model call per rubric point, on a CPU |
 | Research has no time limit | A stuck page read can hang |
-| 8 skills have no questions | Content is still to be written |
+| 7 of the 12 skills have no questions | Content is still to be written (LLM and GenAI has just 1) |
 | The report averages all attempts | "Latest attempt only" is not built |

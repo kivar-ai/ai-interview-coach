@@ -105,7 +105,7 @@ A language model is good at reading text and bad at being trusted. So the model 
 
 ## Roadmap
 
-1. Questions for the 8 skills that have none (Data Analysis, Data Visualization and Communication matter most for analysts)
+1. Questions for the 7 skills that have none (Data Analysis, Data Visualization and Communication matter most for analysts), and more for LLM and GenAI, which has only 1
 2. Recover waiting answers after a restart, and keep the test across a page refresh
 3. A time limit on research
 4. Score only the latest attempt, so practice shows real improvement
